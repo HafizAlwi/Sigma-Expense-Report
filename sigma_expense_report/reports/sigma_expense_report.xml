@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+<report
+    id="sigma_expense_report"
+    model="hr.expense.sheet"
+    string="Sigma Expense Report"
+    report_type="qweb-pdf"
+    name="sigma_expense_report.sigma_expense_report_template"
+    file="sigma_expense_report.sigma_expense_report_template"
+    print_report_name=" 'Staff Claims - %s - %s' % (object.employee_id.name, (object.name).replace('/', ''))">
+</report>
+</odoo>

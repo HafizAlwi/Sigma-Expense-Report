@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="sigma_expense_report_template">
+
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <!-- the t-set "prev_category" is so that if the value of category is same, dont print it multiple times, if it is removed, u will see that the category name will be printed multiple times and it is not nice to look at-->
+                <t t-call="web.external_layout" t-set="prev_category" t-value=" ">
+
+                    <div class="page">
+                        <h2>Staff Claims Report</h2>
+
+                        <div class="row mt32 mb32">
+                            <div class="col-xs-2">
+                                <strong>Employee:</strong>
+                                <p t-field="o.employee_id.name"/>
+                            </div>
+                            <div class="col-xs-2">
+                                <strong>Date:</strong>
+                                <p t-field="o.accounting_date"/>
+                            </div>
+                            <div class="col-xs-3">
+                                <strong>Description:</strong>
+                                <p t-field="o.name"/>
+                            </div>
+                            <div class="col-xs-2">
+                                <strong>Validated By:</strong>
+                                <p t-field="o.responsible_id"/>
+                            </div>
+                            <div class="col-xs-3">
+                                <strong>Payment By:</strong>
+                                <p t-field="o.payment_mode"/>
+                            </div>
+                        </div>
+
+                        <table class="table table-condensed">
+
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Claim Category</th>
+                                    <th>Name</th>
+                                    <!-- <th class="text-center">Ref.</th> -->
+                                    <th class="text-center">Sale Order</th>
+                                    <th>Unit Price (RM)</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-center">Price (RM)</th>
+                                    <th class="text-right">Price by Category (RM)</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <!-- try to get total price by category -->
+                                <t t-set="sum_price_category_list" t-value="[]"/>
+                                <t t-set="sum_price_category" t-value="0"/>
+                                <t t-set="price_index" t-value="0"/>
+                                <t t-set="result" t-value="[]"/>
+
+                                <t t-foreach="o.expense_line_ids.sorted(key=lambda b: b.product_id.categ_id.name)"
+                                   t-as="line">
+                                    <t t-if="line_first">
+                                        <t t-set="sum_price_category"
+                                           t-value="sum_price_category+line.total_amount"></t>
+                                        <t t-set="result" t-value="[str(sum_price_category)]"/>
+                                    </t>
+
+                                    <t t-if="line.product_id.categ_id.name == prev_category and not line_first">
+                                        <!-- if category is same then we sum up the unit amount -->
+                                        <t t-set="sum_price_category"
+                                           t-value="sum_price_category+ line.total_amount"></t>
+                                    </t>
+
+                                    <t t-if="line.product_id.categ_id.name != prev_category and not line_first">
+                                        <t t-set="result" t-value="[str(sum_price_category)]"/>
+                                        <t t-set="sum_price_category_list" t-value="sum_price_category_list + result"/>
+                                        <!-- reset sum value for next index of list calculation (sum_price_category_list) -->
+                                        <t t-set="sum_price_category" t-value="0"/>
+                                        <t t-set="sum_price_category" t-value="sum_price_category + line.total_amount"/>
+
+                                        <!-- update value of category to the current value of category inside running loop-->
+                                        <t t-set="prev_category" t-value="line.product_id.categ_id.name"></t>
+                                    </t>
+
+                                    <t t-if="line_last">
+
+                                        <t t-set="result" t-value="[str(sum_price_category)]"/>
+                                        <t t-set="sum_price_category_list" t-value="sum_price_category_list + result"/>
+                                    </t>
+
+                                    <!--
+                                      <span>sum_price_category = </span>
+                                      <span t-esc="sum_price_category"/> <br/>
+                                      <span>result list =</span>
+                                      <span t-esc="result"/><br/>
+                                      <span>sum_price_category_list = </span>
+                                      <span t-esc="sum_price_category_list"></span>
+                                      <span>total_amount = </span>
+                                      <span t-esc="line.total_amount"/><br/><br/>
+                                    -->
+                                </t>
+
+
+                                <tr t-foreach="o.expense_line_ids.sorted(key=lambda b: b.product_id.categ_id.name)"
+                                    t-as="line">
+                                    <td>
+                                        <t t-if="not line_first">
+                                            <hr style="border-top: 1px solid black;"></hr>
+                                        </t>
+
+                                        <span t-field="line.date"/>
+
+                                    </td>
+                                    <td>
+                                        <t t-if="line.product_id.categ_id.name != prev_category">
+
+                                            <t t-if="not line_first">
+                                                <t t-set="price_index" t-value="price_index+1"></t>
+                                                <hr style="border-top: 1px solid black;"></hr>
+                                            </t>
+
+                                            <span t-field="line.product_id.categ_id.name"/>
+
+
+                                            <!-- update value of category to the current value of category inside running loop-->
+                                            <t t-set="prev_category" t-value="line.product_id.categ_id.name"></t>
+
+                                        </t>
+                                    </td>
+                                    <td>
+                                        <t t-if="line.product_id.categ_id.name == prev_category and not line_first">
+
+                                            <hr style="border-top: 1px solid black;"></hr>
+                                        </t>
+                                        <span t-field="line.product_id.name"/>
+                                        <br/>
+                                        <br/>
+                                        <span>Description:</span>
+                                        <span t-field="line.name"/>
+                                        <br/>
+                                        <t t-if="line.description">
+                                            <span>Details:</span>
+                                            <span t-field="line.description"></span>
+                                        </t>
+                                        <t t-if="line_last">
+                                            <span>
+                                                <br/>
+                                                <br/>
+                                            </span>
+                                        </t>
+
+                                        <!-- <span t-field="line.analytic_account_id.name"/>-->
+                                    </td>
+
+                                    <!--
+                                    <td style="text-center">
+                                      <t t-if="line.product_id.categ_id.name == prev_category and not line_first"  >
+                                        <hr style="border-top: 1px solid black;"></hr>
+                                      </t>
+                                        <span t-field="line.reference"/>
+                                    </td>
+                                    -->
+                                    <td style="text-center">
+                                        <t t-if="line.product_id.categ_id.name == prev_category and not line_first">
+                                            <hr style="border-top: 1px solid black;"></hr>
+                                        </t>
+                                        <span t-field="line.sale_order_id"/>
+
+                                    </td>
+                                    <td>
+                                        <t t-if="line.product_id.categ_id.name == prev_category and not line_first">
+                                            <hr style="border-top: 1px solid black;"></hr>
+                                        </t>
+                                        <span t-field="line.unit_amount"/>
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-if="line.product_id.categ_id.name == prev_category and not line_first">
+                                            <hr style="border-top: 1px solid black;"></hr>
+                                        </t>
+                                        <span t-field="line.quantity"/>
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-if="line.product_id.categ_id.name == prev_category and not line_first">
+                                            <hr style="border-top: 1px solid black;"></hr>
+                                        </t>
+                                        <span t-field="line.total_amount"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <t t-if="sum_price_category_list[price_index] != prev_sum">
+                                            <t t-if="not line_first">
+                                                <hr style="border-top: 1px solid black;"></hr>
+                                            </t>
+
+                                            <span t-esc="'%.2f' % float(sum_price_category_list[price_index])"></span>
+                                            <t t-set="prev_sum" t-value="sum_price_category_list[price_index]"/>
+                                        </t>
+
+                                    </td>
+
+
+                                </tr>
+
+
+                            </tbody>
+                        </table>
+
+
+                        <div class="row">
+                            <div class="col-xs-4 pull-right">
+                                <table class="table table-condensed">
+                                    <tr class="border-black">
+                                        <td>
+                                            <strong>Total (RM)</strong>
+                                        </td>
+                                        <td class="text-right">
+
+                                            <span t-field="o.total_amount"
+                                                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <p>Certified honest and conform,<br/>(Date and signature).
+                            <br/>
+                            <br/>
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+
+
+    </template>
+</odoo>
